@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * Implements hook_block_info().
+ */
+function mediablock_block_info() {
+  $blocks = array();
+  $blocks['mediablock'] = array(
+    'info' => t('Mediablock'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+/**
+ * Implements hook_block_view().
+ */
+function mediablock_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'mediablock':
+      $path = 'sites/all/libraries/jwplayer';
+      drupal_add_js($path . '/jwplayer.js');
+      $settings = variable_get('mediablock_settings', '');
+      // преобразование настроек
+      foreach($settings['options'] as $key => $val) {
+        // dsm($val);
+        if ( ((int) $val > 0) || ((string) $val == $key)) {
+          $settings['options'][$key] = $key . ': "true"';
+        }else{
+          $settings['options'][$key] = $key . ': "false"';
+        }
+      }
+      // dsm($settings);
+      $jwplayer = '<center><div id="mediablock-container">Loading player</div></center>';
+      $script = format_string('<script>jwplayer("mediablock-container").setup({file: "@path", width: @width, height: @height, !autostart});</script>', array('@path' => $settings['path'], '@width' => $settings['width'], '@height' => $settings['height'],'!autostart' => $settings['options']['autostart']));
+      $block['subject'] = 'Live Air';
+      $block['content'] = $jwplayer . $script;
+      break;
+  }
+  return $block;
+}
+/**
+ * Implements hook_block_configure().
+ */
+function mediablock_block_configure($delta = '') {
+  $form = array();
+  // настройки по умолчанию
+  $settings = variable_get('mediablock_settings', '');
+
+  if ($delta == 'mediablock') {
+    $form = array();
+    
+    $form['path'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Path',
+      '#description' => 'Input URI. For example rtmp://217.116.53.25/oflaDemo/live',
+      '#default_value' => $settings['path'],
+    );
+    
+    $form['width'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Width',
+      '#default_value' => $settings['width'],
+    );
+    
+    $form['height'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Height',
+      '#default_value' => $settings['height'],
+    );
+    
+    $form['options'] = array(
+      '#type' => 'checkboxes',
+      '#title' => 'Options',
+      '#options' => array(
+        'autostart' => 'Autostart',
+      ),
+      '#default_value' => $settings['options'],
+    );
+    
+    }
+  return $form;
+}
+/**
+ * Implements hook_block_save().
+ */
+function mediablock_block_save($delta = '', $edit = array()) {
+  // dsm($edit);
+  $settings = array();
+  $settings['path'] = $edit['path'];
+  $settings['width'] = $edit['width'];
+  $settings['height'] = $edit['height'];
+  $settings['options'] = $edit['options'];
+  if ($delta == 'mediablock') {
+    variable_set('mediablock_settings', $settings);
+  }
+}
