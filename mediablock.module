@@ -16,25 +16,12 @@ function mediablock_block_info() {
  */
 function mediablock_block_view($delta = '') {
   $block = array();
+  //$path = '/sites/all/libraries/jwplayer';
+  
   switch ($delta) {
     case 'mediablock':
-      $path = 'sites/all/libraries/jwplayer';
-      drupal_add_js($path . '/jwplayer.js');
-      $settings = variable_get('mediablock_settings', '');
-      // преобразование настроек
-      foreach($settings['options'] as $key => $val) {
-        // dsm($val);
-        if ( ((int) $val > 0) || ((string) $val == $key)) {
-          $settings['options'][$key] = $key . ': "true"';
-        }else{
-          $settings['options'][$key] = $key . ': "false"';
-        }
-      }
-      // dsm($settings);
-      $jwplayer = '<center><div id="mediablock-container">Loading player</div></center>';
-      $script = format_string('<script>jwplayer("mediablock-container").setup({file: "@path", width: @width, height: @height, !autostart});</script>', array('@path' => $settings['path'], '@width' => $settings['width'], '@height' => $settings['height'],'!autostart' => $settings['options']['autostart']));
       $block['subject'] = 'Live Air';
-      $block['content'] = $jwplayer . $script;
+      $block['content'] = theme('mediablock');
       break;
   }
   return $block;
@@ -69,6 +56,12 @@ function mediablock_block_configure($delta = '') {
       '#default_value' => $settings['height'],
     );
     
+    $form['description'] = array(
+      '#type' => 'textarea',
+      '#title' => 'Description',
+      '#default_value' => $settings['description'],
+    );
+    
     $form['options'] = array(
       '#type' => 'checkboxes',
       '#title' => 'Options',
@@ -91,7 +84,41 @@ function mediablock_block_save($delta = '', $edit = array()) {
   $settings['width'] = $edit['width'];
   $settings['height'] = $edit['height'];
   $settings['options'] = $edit['options'];
+  $settings['description'] = $edit['description'];
   if ($delta == 'mediablock') {
     variable_set('mediablock_settings', $settings);
   }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function mediablock_theme($existing, $type, $theme, $path) {
+  $themes = array();
+  $themes['mediablock'] = array('template' => 'mediablock');
+  return $themes;
+}
+
+function template_preprocess_mediablock(&$vars) {
+  $path = 'sites/all/libraries/jwplayer';
+  drupal_add_js($path . '/jwplayer.js');
+  $settings = variable_get('mediablock_settings', '');
+  // преобразование настроек
+  foreach($settings['options'] as $key => $val) {
+    // dsm($val);
+    if ( ((int) $val > 0) || ((string) $val == $key)) {
+      $settings['options'][$key] = $key . ': "true"';
+    }else{
+      $settings['options'][$key] = $key . ': "false"';
+      }
+  }
+  
+  $vars['file'] = $settings['path'];
+  $vars['width'] = $settings['width'];
+  $vars['height'] = $settings['height'];
+  $vars['autostart'] = $settings['options']['autostart'];
+  $vars['flashplayer'] = '/' . $path . '/jwplayer.flash.swf';
+  $vars['html5player'] = '/' . $path . '/jwplayer.html5.js';
+  $vars['description'] = $settings['description'];
+  return $vars;
 }
